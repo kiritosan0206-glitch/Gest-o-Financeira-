@@ -1,0 +1,1337 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Gestão Financeira | Bora organizar a grana! 🚀</title>
+
+    <!-- Cordova bridge for Monaca / Mobile builds (ignored gracefully when run in web browser) -->
+    <script type="text/javascript" src="cordova.js"></script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                        },
+                        violetBrand: {
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Smooth Transitions */
+        .tab-content {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+            opacity: 1;
+        }
+        /* Mobile Safe Area Padding for Monaca/Cordova Native Notch */
+        header {
+            padding-top: max(0.75rem, env(safe-area-inset-top));
+        }
+        main {
+            padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.15);
+            border-radius: 9999px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans min-h-full flex flex-col transition-colors duration-300">
+
+    <!-- Top Navigation Bar -->
+    <header class="sticky top-0 z-30 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-700 px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <!-- Brand Logo / Name -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-400 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-md shadow-emerald-500/20">
+                    💡
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-emerald-600 to-indigo-600 dark:from-emerald-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                        Gestão Financeira
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">Bora organizar essa grana sem neura! 💸</p>
+                </div>
+            </div>
+
+            <!-- Action Controls & Theme Toggle -->
+            <div class="flex items-center space-x-2 sm:space-x-4">
+                <button onclick="openRendaModal()" class="bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 border border-emerald-200 dark:border-emerald-800">
+                    <i class="fa-solid fa-wallet"></i>
+                    <span id="displayRendaTop">Renda: R$ 4.500</span>
+                </button>
+
+                <!-- EXPORT BUTTONS -->
+                <button onclick="exportarCSV()" class="bg-indigo-50 dark:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 border border-indigo-200 dark:border-indigo-800" title="Exportar para Excel / CSV">
+                    <i class="fa-solid fa-file-excel"></i>
+                    <span class="hidden md:inline">Exportar CSV</span>
+                </button>
+
+                <button onclick="gerarRelatorioPDF()" class="bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900/50 px-3 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 border border-purple-200 dark:border-purple-800" title="Relatório para PDF / Impressão">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span class="hidden md:inline">Relatório PDF</span>
+                </button>
+
+                <button onclick="toggleDarkMode()" class="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="Alternar Tema">
+                    <i class="fa-solid fa-moon dark:hidden text-lg"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-lg text-amber-400"></i>
+                </button>
+
+                <button onclick="resetDataPrompt()" class="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition" title="Resetar Dados">
+                    <i class="fa-solid fa-rotate-left text-lg"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- Navigation Tabs (Desktop & Mobile) -->
+        <nav class="flex space-x-2 bg-slate-200/70 dark:bg-slate-800/80 p-1.5 rounded-2xl overflow-x-auto no-scrollbar">
+            <button onclick="switchTab('dashboard')" id="tab-btn-dashboard" class="tab-btn active flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center justify-center space-x-2 bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm">
+                <i class="fa-solid fa-chart-pie"></i>
+                <span>Dashboard</span>
+            </button>
+            <button onclick="switchTab('gastos-fixos')" id="tab-btn-gastos-fixos" class="tab-btn flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-calendar-check"></i>
+                <span>Gastos Fixos</span>
+            </button>
+            <button onclick="switchTab('gastos-variaveis')" id="tab-btn-gastos-variaveis" class="tab-btn flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Gastos Variáveis</span>
+            </button>
+            <button onclick="switchTab('economizar')" id="tab-btn-economizar" class="tab-btn flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-scissors"></i>
+                <span>Oásis do Corte</span>
+            </button>
+            <button onclick="switchTab('diagnostico')" id="tab-btn-diagnostico" class="tab-btn flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Coach IA</span>
+            </button>
+            <button onclick="switchTab('sugestoes')" id="tab-btn-sugestoes" class="tab-btn flex-1 min-w-[120px] py-2.5 px-4 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-lightbulb"></i>
+                <span>Sugestões</span>
+            </button>
+        </nav>
+
+        <!-- ==================== TAB 1: DASHBOARD ==================== -->
+        <section id="tab-dashboard" class="tab-content active space-y-6">
+            <!-- Dynamic Welcome Banner -->
+            <div class="bg-gradient-to-r from-emerald-500 via-teal-600 to-indigo-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="relative z-10 max-w-2xl space-y-2">
+                    <span class="inline-block px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold uppercase tracking-wider">
+                        Status de Hoje ✨
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight" id="heroGreeting">
+                        E aí! Tudo pronto pra dominar suas finanças?
+                    </h2>
+                    <p class="text-emerald-100 text-sm sm:text-base" id="heroSubtitle">
+                        Seu saldo líquido atual é de R$ 0,00. Veja o raio-x completo do seu mês abaixo.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Metrics Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <!-- Total Renda -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">Renda Total</span>
+                        <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-arrow-down-left"></i>
+                        </div>
+                    </div>
+                    <div class="text-lg sm:text-xl font-bold" id="cardEntradas">R$ 0,00</div>
+                    <span class="text-[10px] text-slate-400">Mensal Fixa + Extra</span>
+                </div>
+
+                <!-- Total Fixos -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">Gastos Fixos</span>
+                        <div class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-house-lock"></i>
+                        </div>
+                    </div>
+                    <div class="text-lg sm:text-xl font-bold" id="cardFixos">R$ 0,00</div>
+                    <span class="text-[10px] text-slate-400" id="cardFixosPercent">0% da Renda</span>
+                </div>
+
+                <!-- Total Variaveis -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">Variáveis</span>
+                        <div class="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-bag-shopping"></i>
+                        </div>
+                    </div>
+                    <div class="text-lg sm:text-xl font-bold" id="cardVariaveis">R$ 0,00</div>
+                    <span class="text-[10px] text-slate-400" id="cardVariaveisPercent">0% da Renda</span>
+                </div>
+
+                <!-- Saldo Livre -->
+                <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">Saldo Livre</span>
+                        <div class="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-900/40 text-teal-600 dark:text-teal-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-piggy-bank"></i>
+                        </div>
+                    </div>
+                    <div class="text-lg sm:text-xl font-bold" id="cardSaldo">R$ 0,00</div>
+                    <span class="text-[10px] text-slate-400">Disponível no fim</span>
+                </div>
+
+                <!-- Taxa de Poupança -->
+                <div class="col-span-2 sm:col-span-1 bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 hover:shadow-md transition">
+                    <div class="flex items-center justify-between text-slate-400 mb-2">
+                        <span class="text-xs font-medium uppercase tracking-wider">% Economia</span>
+                        <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-sm">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                    </div>
+                    <div class="text-lg sm:text-xl font-bold" id="cardTaxaEconomia">0%</div>
+                    <span class="text-[10px] text-emerald-500 font-medium" id="cardEconomiaStatus">Guardando grana!</span>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Expense Categories Chart -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-emerald-500"></i> Distribuição dos Gastos
+                        </h3>
+                        <span class="text-xs text-slate-400">Visão Geral</span>
+                    </div>
+                    <div class="relative flex-1 flex items-center justify-center min-h-[240px]">
+                        <canvas id="chartCategorias"></canvas>
+                    </div>
+                </div>
+
+                <!-- Income vs Expense Bar Chart -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 flex flex-col justify-between">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base flex items-center gap-2">
+                            <i class="fa-solid fa-chart-column text-indigo-500"></i> Entradas vs Saídas
+                        </h3>
+                        <span class="text-xs text-slate-400">Comparativo</span>
+                    </div>
+                    <div class="relative flex-1 flex items-center justify-center min-h-[240px]">
+                        <canvas id="chartComparativo"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 2: GASTOS FIXOS ==================== -->
+        <section id="tab-gastos-fixos" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Gastos Fixos Mensais 📌</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Aquelas contas previsíveis que chegam todo mês sem falta.</p>
+                </div>
+                <button onclick="openModalGasto('fixo')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shadow-md shadow-emerald-500/20 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Novo Gasto Fixo</span>
+                </button>
+            </div>
+
+            <!-- Fixos List -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 dark:bg-slate-700/50 text-slate-400 text-xs uppercase font-semibold border-b border-slate-100 dark:border-slate-700">
+                            <tr>
+                                <th class="p-4">Status</th>
+                                <th class="p-4">Descrição</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4">Valor</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaGastosFixos" class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                            <!-- Injected via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 3: GASTOS VARIÁVEIS ==================== -->
+        <section id="tab-gastos-variaveis" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Gastos Variáveis & Diários 🛒</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Lazer, iFood, Uber, comprinhas e saidinhas no fim de semana.</p>
+                </div>
+                <button onclick="openModalGasto('variavel')" class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition shadow-md shadow-indigo-500/20 flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Registrar Gasto</span>
+                </button>
+            </div>
+
+            <!-- Variáveis List -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 dark:bg-slate-700/50 text-slate-400 text-xs uppercase font-semibold border-b border-slate-100 dark:border-slate-700">
+                            <tr>
+                                <th class="p-4">Data</th>
+                                <th class="p-4">Descrição</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4">Valor</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="listaGastosVariaveis" class="divide-y divide-slate-100 dark:divide-slate-700/60">
+                            <!-- Injected via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 4: AONDE POSSO ECONOMIZAR? ==================== -->
+        <section id="tab-economizar" class="tab-content space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-6 text-white shadow-lg flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-semibold uppercase">Raio-X de Cortes 👻</span>
+                    <h3 class="text-xl font-bold">Oásis de Economia & Gastos Fantasma</h3>
+                    <p class="text-amber-100 text-xs sm:text-sm">Localizamos onde seu dinheiro está escapando sem você perceber!</p>
+                </div>
+                <div class="text-4xl hidden sm:block">🕵️‍♂️</div>
+            </div>
+
+            <!-- Simulator & Challenges Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Potential Savings Highlight -->
+                <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 space-y-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-piggy-bank text-amber-500"></i> Potencial de Economia
+                    </h4>
+                    <div class="p-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/40 rounded-xl text-center">
+                        <span class="text-xs text-amber-700 dark:text-amber-400 font-semibold block uppercase">Corte estimado este mês</span>
+                        <span id="valorPotencialCorte" class="text-3xl font-extrabold text-amber-600 dark:text-amber-400">R$ 0,00</span>
+                        <p class="text-[11px] text-amber-800 dark:text-amber-300 mt-1">Reduzindo 20% a 30% dos supérfluos identificados.</p>
+                    </div>
+
+                    <div class="space-y-2 text-xs text-slate-500 dark:text-slate-400">
+                        <div class="flex justify-between">
+                            <span>Gastos Supérfluos Atuais:</span>
+                            <span font-semibold text-slate-700 dark:text-slate-200 id="totalSuperfluos">R$ 0,00</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Economia em 1 Ano:</span>
+                            <span class="font-bold text-emerald-500" id="economiaProjetada1Ano">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Express Challenges -->
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <i class="fa-solid fa-trophy text-amber-500"></i> Desafio Economia Express 🔥
+                        </h4>
+                        <span class="text-xs text-slate-400">Escolha uma meta rápida</span>
+                    </div>
+
+                    <div id="desafiosEconomiaContainer" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ghost Expenses Table -->
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 space-y-4">
+                <h4 class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <i class="fa-solid fa-ghost text-purple-500"></i> Gastos Suspeitos / Fantasma Detectados
+                </h4>
+                <div id="listaGastosFantasma" class="space-y-2">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 5: COACH IA & DIAGNÓSTICO ==================== -->
+        <section id="tab-diagnostico" class="tab-content space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-violet-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-semibold uppercase">Mentor de Bolso 🤖</span>
+                    <h3 class="text-xl font-bold">Diagnóstico Financeiro & Regra 50/30/20</h3>
+                    <p class="text-indigo-100 text-xs sm:text-sm">Análise inteligente e humanizada para você evoluir sua carreira e grana!</p>
+                </div>
+                <div class="text-4xl hidden sm:block">🧠</div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 50/30/20 Method Progress Cards -->
+                <div class="lg:col-span-1 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 space-y-4">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-base">Metodologia Ideal (50/30/20)</h4>
+                    
+                    <!-- Necessidades 50% -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span>Necessidades (Ideal: 50%)</span>
+                            <span id="percNecessidades">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                            <div id="barNecessidades" class="bg-indigo-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-400" id="labelNecessidades">R$ 0,00 em gastos fixos essenciais</p>
+                    </div>
+
+                    <!-- Desejos 30% -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span>Desejos & Lazer (Ideal: 30%)</span>
+                            <span id="percDesejos">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                            <div id="barDesejos" class="bg-amber-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-400" id="labelDesejos">R$ 0,00 em lazer e variáveis</p>
+                    </div>
+
+                    <!-- Objetivos 20% -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-semibold">
+                            <span>Investir/Poupar (Ideal: 20%)</span>
+                            <span id="percInvestimentos">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
+                            <div id="barInvestimentos" class="bg-emerald-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                        <p class="text-[11px] text-slate-400" id="labelInvestimentos">R$ 0,00 economizados no final</p>
+                    </div>
+                </div>
+
+                <!-- AI Recommendations & Feedbacks -->
+                <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 space-y-4 flex flex-col justify-between">
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700 pb-3">
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-comments text-indigo-500"></i> Feedback do Coach Financeiro
+                            </h4>
+                            <span id="healthBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                                Excelente
+                            </span>
+                        </div>
+
+                        <div id="aiFeedbackMessage" class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                            <!-- Feedback injected dynamically via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Emergency Fund Calculator Quick Widget -->
+                    <div class="mt-6 p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/40 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-indigo-900 dark:text-indigo-200 uppercase tracking-wide">
+                                🛡️ Meta de Reserva de Emergência (6 meses)
+                            </span>
+                            <span class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400" id="metaReservaValor">R$ 0,00</span>
+                        </div>
+                        <p class="text-xs text-indigo-700 dark:text-indigo-300" id="metaReservaDesc">
+                            Ideal para garantir sua tranquilidade enquanto foca em alavancar sua carreira.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== TAB 6: SUGESTÕES DE MELHORIA ==================== -->
+        <section id="tab-sugestoes" class="tab-content space-y-6">
+            <!-- Header Banner -->
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white shadow-lg flex items-center justify-between">
+                <div class="space-y-1">
+                    <span class="text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-semibold uppercase">Plano de Ação 🚀</span>
+                    <h3 class="text-xl font-bold">Sugestões de Melhoria Contínua</h3>
+                    <p class="text-emerald-100 text-xs sm:text-sm">Recomendações personalizadas para otimizar suas finanças mês a mês!</p>
+                </div>
+                <div class="text-4xl hidden sm:block">💡</div>
+            </div>
+
+            <!-- Custom Suggestions Grid -->
+            <div id="containerSugestoes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Injected dynamically via JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 py-4 px-6 text-center text-xs text-slate-400 mt-auto">
+        <p>Gestão Financeira © 2026 — Desenvolvido com foco em EdTech, Carreiras e Aceleração Pessoal. 🚀</p>
+    </footer>
+
+    <!-- ==================== MODALS ==================== -->
+
+    <!-- Modal: Adicionar/Editar Gasto -->
+    <div id="modalGasto" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100" id="modalGastoTitulo">Adicionar Item</h3>
+                <button onclick="closeModalGasto()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="formGasto" onsubmit="salvarGasto(event)" class="space-y-4">
+                <input type="hidden" id="gastoId">
+                <input type="hidden" id="gastoTipo"> <!-- 'fixo' ou 'variavel' -->
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Descrição</label>
+                    <input type="text" id="gastoDescricao" required placeholder="Ex: Assinatura Netflix, Aluguel, Mercado" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Valor (R$)</label>
+                    <input type="number" step="0.01" id="gastoValor" required placeholder="0.00" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Categoria</label>
+                    <select id="gastoCategoria" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="Moradia">🏠 Moradia / Casa</option>
+                        <option value="Alimentação">🍕 Alimentação / Mercado / Delivery</option>
+                        <option value="Transporte">🚗 Transporte / Uber / Combustível</option>
+                        <option value="Lazer">🎉 Lazer & Festas</option>
+                        <option value="Assinaturas">📱 Assinaturas & Serviços</option>
+                        <option value="Educação">📚 Educação & Cursos</option>
+                        <option value="Outros">📦 Outros</option>
+                    </select>
+                </div>
+
+                <div id="campoDataVariavel" class="hidden">
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Data</label>
+                    <input type="date" id="gastoData" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeModalGasto()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white transition shadow-md shadow-emerald-500/20">Salvar Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Editar Renda Mensal -->
+    <div id="modalRenda" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700 space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 dark:border-slate-700 pb-3">
+                <h3 class="font-bold text-lg text-slate-800 dark:text-slate-100">Atualizar Renda Total</h3>
+                <button onclick="closeRendaModal()" class="text-slate-400 hover:text-slate-600 text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form onsubmit="salvarRenda(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Renda Mensal Líquida (R$)</label>
+                    <input type="number" step="0.01" id="inputRendaValor" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button type="button" onclick="closeRendaModal()" class="px-4 py-2 rounded-xl text-sm font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700">Cancelar</button>
+                    <button type="submit" class="px-5 py-2 rounded-xl text-sm font-medium bg-emerald-500 hover:bg-emerald-600 text-white shadow-md">Salvar Renda</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 space-y-2 pointer-events-none"></div>
+
+    <!-- ==================== APPLICATION SCRIPT ==================== -->
+    <script>
+        /* INITIAL FICTITIOUS DATA */
+        const defaultData = {
+            rendaMensal: 4500.00,
+            gastosFixos: [
+                { id: 'f1', descricao: 'Aluguel & Condomínio', valor: 1500.00, categoria: 'Moradia', pago: true },
+                { id: 'f2', descricao: 'Energia Elétrica', valor: 180.00, categoria: 'Moradia', pago: true },
+                { id: 'f3', descricao: 'Internet Fibra', valor: 120.00, categoria: 'Assinaturas', pago: true },
+                { id: 'f4', descricao: 'Academia', valor: 110.00, categoria: 'Outros', pago: false },
+                { id: 'f5', descricao: 'Curso de Especialização', valor: 250.00, categoria: 'Educação', pago: true }
+            ],
+            gastosVariaveis: [
+                { id: 'v1', descricao: 'iFood / Delivery do FDS', valor: 350.00, categoria: 'Alimentação', data: '2026-10-20' },
+                { id: 'v2', descricao: 'Uber & Transporte', valor: 220.00, categoria: 'Transporte', data: '2026-10-22' },
+                { id: 'v3', descricao: 'Festas & Barzinho com Amigos', valor: 300.00, categoria: 'Lazer', data: '2026-10-24' },
+                { id: 'v4', descricao: 'Supermercado da semana', valor: 420.00, categoria: 'Alimentação', data: '2026-10-25' },
+                { id: 'v5', descricao: 'Assinaturas de Streaming em Duplicidade', valor: 85.00, categoria: 'Assinaturas', data: '2026-10-15' }
+            ],
+            desafiosCumpridos: []
+        };
+
+        // State Holder
+        let state = {};
+
+        // Chart Instances
+        let chartCategoriasInstance = null;
+        let chartComparativoInstance = null;
+
+        /* INITIALIZATION */
+        window.addEventListener('DOMContentLoaded', () => {
+            carregarDados();
+            renderizarTudo();
+        });
+
+        /* MONACA / CORDOVA NATIVE EVENTS */
+        document.addEventListener('deviceready', onDeviceReady, false);
+
+        function onDeviceReady() {
+            // Cordova environment initialized in Monaca App
+            console.log("Monaca Cordova ready!");
+            if (window.StatusBar) {
+                window.StatusBar.styleDefault();
+            }
+            // Intercept native hardware back button on Android
+            document.addEventListener('backbutton', onBackButton, false);
+        }
+
+        function onBackButton(e) {
+            e.preventDefault();
+            const modalGasto = document.getElementById('modalGasto');
+            const modalRenda = document.getElementById('modalRenda');
+
+            // Close active modal if open on back key press
+            if (!modalGasto.classList.contains('hidden')) {
+                closeModalGasto();
+            } else if (!modalRenda.classList.contains('hidden')) {
+                closeRendaModal();
+            } else {
+                showToast("Pressione novamente para sair do app.");
+            }
+        }
+
+        /* DATA MANAGEMENT & LOCALSTORAGE */
+        function carregarDados() {
+            const dataLocal = localStorage.getItem('gestao_financeira_db');
+            if (dataLocal) {
+                try {
+                    state = JSON.parse(dataLocal);
+                } catch(e) {
+                    state = JSON.parse(JSON.stringify(defaultData));
+                }
+            } else {
+                state = JSON.parse(JSON.stringify(defaultData));
+                salvarState();
+            }
+        }
+
+        function salvarState() {
+            localStorage.setItem('gestao_financeira_db', JSON.stringify(state));
+            renderizarTudo();
+        }
+
+        function resetDataPrompt() {
+            if (confirm("Quer mesmo resetar para os dados de exemplo padrão? Todas as suas alterações manuais serão limpas.")) {
+                state = JSON.parse(JSON.stringify(defaultData));
+                salvarState();
+                showToast("Dados resetados para o padrão de exemplo! 🔄");
+            }
+        }
+
+        /* FORMATTERS */
+        function formatMoney(val) {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+        }
+
+        /* NAVIGATION TABS */
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'bg-white', 'dark:bg-slate-700', 'text-emerald-600', 'dark:text-emerald-400', 'shadow-sm');
+                btn.classList.add('text-slate-600', 'dark:text-slate-300');
+            });
+
+            const selectedTab = document.getElementById(`tab-${tabId}`);
+            const selectedBtn = document.getElementById(`tab-btn-${tabId}`);
+
+            if (selectedTab && selectedBtn) {
+                selectedTab.classList.add('active');
+                selectedBtn.classList.add('active', 'bg-white', 'dark:bg-slate-700', 'text-emerald-600', 'dark:text-emerald-400', 'shadow-sm');
+                selectedBtn.classList.remove('text-slate-600', 'dark:text-slate-300');
+            }
+
+            // Trigger chart refresh when opening dashboard tab
+            if (tabId === 'dashboard') {
+                renderCharts();
+            }
+        }
+
+        /* MAIN RENDER ENGINE */
+        function renderizarTudo() {
+            // Update Top Nav Renda
+            document.getElementById('displayRendaTop').innerText = `Renda: ${formatMoney(state.rendaMensal)}`;
+
+            // Calculations
+            const totalFixos = state.gastosFixos.reduce((acc, curr) => acc + curr.valor, 0);
+            const totalVariaveis = state.gastosVariaveis.reduce((acc, curr) => acc + curr.valor, 0);
+            const totalGastos = totalFixos + totalVariaveis;
+            const saldoLivre = state.rendaMensal - totalGastos;
+            const taxaEconomia = state.rendaMensal > 0 ? Math.max(0, (saldoLivre / state.rendaMensal) * 100) : 0;
+
+            // Render Dashboard Cards
+            document.getElementById('cardEntradas').innerText = formatMoney(state.rendaMensal);
+            document.getElementById('cardFixos').innerText = formatMoney(totalFixos);
+            document.getElementById('cardFixosPercent').innerText = `${((totalFixos / (state.rendaMensal || 1)) * 100).toFixed(0)}% da Renda`;
+            document.getElementById('cardVariaveis').innerText = formatMoney(totalVariaveis);
+            document.getElementById('cardVariaveisPercent').innerText = `${((totalVariaveis / (state.rendaMensal || 1)) * 100).toFixed(0)}% da Renda`;
+            document.getElementById('cardSaldo').innerText = formatMoney(saldoLivre);
+            document.getElementById('cardTaxaEconomia').innerText = `${taxaEconomia.toFixed(1)}%`;
+
+            // Dynamic Hero Text
+            const heroSubtitle = document.getElementById('heroSubtitle');
+            if (saldoLivre >= 0) {
+                heroSubtitle.innerText = `Você tá no azul! Restam ${formatMoney(saldoLivre)} de saldo livre para investir ou guardar este mês.`;
+            } else {
+                heroSubtitle.innerText = `Atenção! Você está ${formatMoney(Math.abs(saldoLivre))} no negativo. Vamos dar um corte nas despesas variáveis! 🚨`;
+            }
+
+            // Render Lists
+            renderGastosFixos();
+            renderGastosVariaveis();
+
+            // Render Oasis & AI Modules
+            renderOasisEconomia(totalVariaveis);
+            renderCoachIA(totalFixos, totalVariaveis, saldoLivre);
+            renderSugestoesMelhoria(totalFixos, totalVariaveis, saldoLivre);
+
+            // Charts
+            renderCharts();
+        }
+
+        /* LIST RENDERING */
+        function renderGastosFixos() {
+            const container = document.getElementById('listaGastosFixos');
+            if (state.gastosFixos.length === 0) {
+                container.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum gasto fixo cadastrado ainda. 🌿</td></tr>`;
+                return;
+            }
+
+            container.innerHTML = state.gastosFixos.map(item => `
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition">
+                    <td class="p-4">
+                        <button onclick="togglePagoFixo('${item.id}')" class="px-2.5 py-1 rounded-full text-xs font-semibold flex items-center space-x-1 ${item.pago ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300'}">
+                            <i class="fa-solid ${item.pago ? 'fa-check' : 'fa-clock'} text-[10px]"></i>
+                            <span>${item.pago ? 'Pago' : 'Pendente'}</span>
+                        </button>
+                    </td>
+                    <td class="p-4 font-medium text-slate-800 dark:text-slate-100">${item.descricao}</td>
+                    <td class="p-4 text-xs text-slate-500"><span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg">${item.categoria}</span></td>
+                    <td class="p-4 font-bold text-slate-700 dark:text-slate-200">${formatMoney(item.valor)}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="editarGasto('fixo', '${item.id}')" class="text-slate-400 hover:text-indigo-500 transition"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="removerGasto('fixo', '${item.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function renderGastosVariaveis() {
+            const container = document.getElementById('listaGastosVariaveis');
+            if (state.gastosVariaveis.length === 0) {
+                container.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum gasto variável cadastrado. 🛍️</td></tr>`;
+                return;
+            }
+
+            container.innerHTML = state.gastosVariaveis.map(item => `
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-700/30 transition">
+                    <td class="p-4 text-xs text-slate-400">${item.data ? new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR') : 'Hoje'}</td>
+                    <td class="p-4 font-medium text-slate-800 dark:text-slate-100">${item.descricao}</td>
+                    <td class="p-4 text-xs text-slate-500"><span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 rounded-lg">${item.categoria}</span></td>
+                    <td class="p-4 font-bold text-slate-700 dark:text-slate-200">${formatMoney(item.valor)}</td>
+                    <td class="p-4 text-right space-x-2">
+                        <button onclick="editarGasto('variavel', '${item.id}')" class="text-slate-400 hover:text-indigo-500 transition"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="removerGasto('variavel', '${item.id}')" class="text-slate-400 hover:text-rose-500 transition"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        /* OASIS DE ECONOMIA / RAIO-X MODULE */
+        function renderOasisEconomia(totalVariaveis) {
+            // Find superfluous/ghost expenses (e.g. Lazer, Assinaturas, iFood/Alimentação variavel)
+            const superfluos = state.gastosVariaveis.filter(g => ['Lazer', 'Assinaturas', 'Alimentação'].includes(g.categoria));
+            const totalSuperfluo = superfluos.reduce((acc, curr) => acc + curr.valor, 0);
+
+            // Estimated 25% cut
+            const corteEstimado = totalSuperfluo * 0.25;
+            document.getElementById('valorPotencialCorte').innerText = formatMoney(corteEstimado);
+            document.getElementById('totalSuperfluos').innerText = formatMoney(totalSuperfluo);
+            document.getElementById('economiaProjetada1Ano').innerText = formatMoney(corteEstimado * 12);
+
+            // Ghost Expenses List
+            const ghostContainer = document.getElementById('listaGastosFantasma');
+            if (superfluos.length === 0) {
+                ghostContainer.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">Nenhum gasto fantasma detectado. Você está super disciplinado! 👏</p>`;
+            } else {
+                ghostContainer.innerHTML = superfluos.map(item => `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/40 rounded-xl border border-slate-100 dark:border-slate-700">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-lg">👻</span>
+                            <div>
+                                <h5 class="text-sm font-semibold text-slate-800 dark:text-slate-100">${item.descricao}</h5>
+                                <span class="text-[11px] text-slate-400">${item.categoria} — Sugestão: reduzir em 30%</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-sm font-bold text-rose-500">${formatMoney(item.valor)}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Challenges Engine
+            const desafios = [
+                { id: 'd1', titulo: 'Desafio Sem iFood por 7 Dias', economia: 100, desc: 'Cozinhe em casa essa semana e economize até R$ 100 no delivery.' },
+                { id: 'd2', titulo: 'Cancelar Assinatura Esquece-e-Paga', economia: 45, desc: 'Cancele aquele streaming que você não assiste há semanas.' },
+                { id: 'd3', titulo: 'Regra dos 3 Dias pras Compras', economia: 150, desc: 'Espere 3 dias antes de comprar algo impulso no e-commerce.' }
+            ];
+
+            const desafiosContainer = document.getElementById('desafiosEconomiaContainer');
+            desafiosContainer.innerHTML = desafios.map(d => {
+                const cumprido = state.desafiosCumpridos && state.desafiosCumpridos.includes(d.id);
+                return `
+                    <div class="p-4 rounded-xl border ${cumprido ? 'bg-emerald-50/60 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800' : 'bg-slate-50 dark:bg-slate-700/30 border-slate-200 dark:border-slate-700'} space-y-2">
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-slate-100">${d.titulo}</h5>
+                            <span class="text-xs font-extrabold text-emerald-600 dark:text-emerald-400">+${formatMoney(d.economia)}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">${d.desc}</p>
+                        <button onclick="toggleDesafio('${d.id}')" class="w-full py-1.5 rounded-lg text-xs font-semibold transition ${cumprido ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-200 hover:bg-slate-300'}">
+                            ${cumprido ? '✓ Meta Concluída!' : 'Aceitar Desafio 🔥'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function toggleDesafio(id) {
+            if (!state.desafiosCumpridos) state.desafiosCumpridos = [];
+            const idx = state.desafiosCumpridos.indexOf(id);
+            if (idx > -1) {
+                state.desafiosCumpridos.splice(idx, 1);
+                showToast("Desafio desmarcado.");
+            } else {
+                state.desafiosCumpridos.push(id);
+                showToast("Boa! Meta aceita com sucesso! Mantenha o foco! 🚀");
+            }
+            salvarState();
+        }
+
+        /* COACH IA & DIAGNOSTIC MODULE */
+        function renderCoachIA(totalFixos, totalVariaveis, saldoLivre) {
+            const renda = state.rendaMensal || 1;
+
+            // Percentages
+            const pNec = Math.min(100, Math.round((totalFixos / renda) * 100));
+            const pDes = Math.min(100, Math.round((totalVariaveis / renda) * 100));
+            const pInv = Math.max(0, Math.round((saldoLivre / renda) * 100));
+
+            // Update 50/30/20 UI
+            document.getElementById('percNecessidades').innerText = `${pNec}%`;
+            document.getElementById('barNecessidades').style.width = `${pNec}%`;
+            document.getElementById('labelNecessidades').innerText = `${formatMoney(totalFixos)} de gastos fixos`;
+
+            document.getElementById('percDesejos').innerText = `${pDes}%`;
+            document.getElementById('barDesejos').style.width = `${pDes}%`;
+            document.getElementById('labelDesejos').innerText = `${formatMoney(totalVariaveis)} em desejos/variáveis`;
+
+            document.getElementById('percInvestimentos').innerText = `${pInv}%`;
+            document.getElementById('barInvestimentos').style.width = `${pInv}%`;
+            document.getElementById('labelInvestimentos').innerText = `${formatMoney(saldoLivre)} de saldo livre final`;
+
+            // Emergency Fund (6x Fixed Expenses)
+            const metaReserva = totalFixos * 6;
+            document.getElementById('metaReservaValor').innerText = formatMoney(metaReserva);
+
+            // Dynamic AI Feedback Text & Health Badge
+            const feedbackContainer = document.getElementById('aiFeedbackMessage');
+            const healthBadge = document.getElementById('healthBadge');
+
+            let feedbackHtml = '';
+
+            if (pNec <= 55 && pDes <= 35 && pInv >= 15) {
+                healthBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300";
+                healthBadge.innerText = "Saúde Financeira: Sensacional 🌟";
+                feedbackHtml = `
+                    <p class="leading-relaxed"><strong>Você está dando um show de organização! 🎉</strong> Seus gastos fixos cabem perfeitamente no seu orçamento e ainda sobra margem pra poupar. Isso abre portas incríveis pra acelerar sua carreira e investimentos.</p>
+                    <p class="leading-relaxed">💡 <strong>Dica Coach:</strong> Direcione o saldo de <strong>${formatMoney(saldoLivre)}</strong> diretamente para sua Reserva de Emergência ou para cursos/certificações que vão dobrar seu valor de mercado!</p>
+                `;
+            } else if (pNec > 60) {
+                healthBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300";
+                healthBadge.innerText = "Atenção nos Fixos ⚠️";
+                feedbackHtml = `
+                    <p class="leading-relaxed"><strong>Sua estrutura fixa está um pouco pesada (${pNec}% da renda).</strong> Quando os custos fixos engolem metade do contracheque, qualquer imprevisto gera ansiedade.</p>
+                    <p class="leading-relaxed">💡 <strong>Dica Coach:</strong> Tente renegociar assinaturas, plano de internet ou despesas de moradia. Liberar R$ 200/mês aqui traz uma paz de espírito gigante!</p>
+                `;
+            } else {
+                healthBadge.className = "px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300";
+                healthBadge.innerText = "Equilíbrio em Progresso ⚖️";
+                feedbackHtml = `
+                    <p class="leading-relaxed"><strong>Você está no caminho certo!</strong> O seu maior ponto de atenção hoje são os gastos variáveis e impulsivos (${pDes}% da renda).</p>
+                    <p class="leading-relaxed">💡 <strong>Dica Coach:</strong> Experimente definir um teto semanal para o cartão de crédito e iFood. Pequenos ajustes de R$ 30 por semana viram mais de R$ 1.500 no ano!</p>
+                `;
+            }
+
+            feedbackContainer.innerHTML = feedbackHtml;
+        }
+
+        /* SUGESTÕES DE MELHORIA MODULE */
+        function renderSugestoesMelhoria(totalFixos, totalVariaveis, saldoLivre) {
+            const container = document.getElementById('containerSugestoes');
+            if (!container) return;
+
+            const renda = state.rendaMensal || 1;
+            const sugestoes = [];
+
+            // Regra 1: Gastos Fixos muito altos
+            if (totalFixos / renda > 0.5) {
+                sugestoes.push({
+                    icone: 'fa-house-circle-exclamation',
+                    cor: 'amber',
+                    titulo: 'Renegocie Custos Fixos',
+                    descricao: `Seus gastos fixos comprometem ${((totalFixos/renda)*100).toFixed(0)}% do orçamento. Tente renegociar contratos de internet, aluguel ou planos de celular.`
+                });
+            }
+
+            // Regra 2: Gastos Variáveis elevados
+            if (totalVariaveis / renda > 0.3) {
+                sugestoes.push({
+                    icone: 'fa-cart-flatbed-suitcase',
+                    cor: 'rose',
+                    titulo: 'Defina um Limite Semanal',
+                    descricao: 'Defina uma "mesada semanal" para lazer e delivery. Estabelecer tetos curtos ajuda a evitar estourar o orçamento no fim do mês.'
+                });
+            }
+
+            // Regra 3: Reserva de Emergência
+            const reservaAtual = Math.max(0, saldoLivre);
+            const reservaMeta = totalFixos * 6;
+            if (reservaAtual < reservaMeta) {
+                sugestoes.push({
+                    icone: 'fa-shield-halved',
+                    cor: 'indigo',
+                    titulo: 'Priorize a Reserva de Emergência',
+                    descricao: `Automatize uma transferência assim que receber o salário para guardar dinheiro antes de gastar. Meta sugerida: ${formatMoney(reservaMeta)}.`
+                });
+            }
+
+            // Regra 4: Cursos e Capacitação Pessoal
+            const temEducacao = state.gastosFixos.some(g => g.categoria === 'Educação');
+            if (!temEducacao) {
+                sugestoes.push({
+                    icone: 'fa-graduation-cap',
+                    cor: 'emerald',
+                    titulo: 'Invista no Seu Aumento de Renda',
+                    descricao: 'A melhor forma de economizar é ganhar mais! Separe de 5% a 10% da sua renda para livros, cursos e certificações profissionais.'
+                });
+            }
+
+            // Regra 5: Compras por Impulso
+            sugestoes.push({
+                icone: 'fa-clock',
+                cor: 'purple',
+                titulo: 'Aplique a Regra das 48 Horas',
+                descricao: 'Ao desejar comprar um item não essencial acima de R$ 100, espere 48 horas. Se a vontade passar, salve esse valor no seu fundo de investimentos.'
+            });
+
+            container.innerHTML = sugestoes.map(s => `
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700/60 space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-${s.cor}-100 dark:bg-${s.cor}-950/50 text-${s.cor}-600 dark:text-${s.cor}-400 flex items-center justify-center text-lg font-bold">
+                        <i class="fa-solid ${s.icone}"></i>
+                    </div>
+                    <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">${s.titulo}</h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">${s.descricao}</p>
+                </div>
+            `).join('');
+        }
+
+        /* CHART.JS RENDERER */
+        function renderCharts() {
+            // Category Totals Calculation
+            const categoriesMap = {};
+            [...state.gastosFixos, ...state.gastosVariaveis].forEach(item => {
+                categoriesMap[item.categoria] = (categoriesMap[item.categoria] || 0) + item.valor;
+            });
+
+            const catLabels = Object.keys(categoriesMap);
+            const catValues = Object.values(categoriesMap);
+
+            // Chart 1: Donut (Distribution)
+            const ctx1 = document.getElementById('chartCategorias');
+            if (ctx1) {
+                if (chartCategoriasInstance) chartCategoriasInstance.destroy();
+                chartCategoriasInstance = new Chart(ctx1, {
+                    type: 'doughnut',
+                    data: {
+                        labels: catLabels.length ? catLabels : ['Sem dados'],
+                        datasets: [{
+                            data: catValues.length ? catValues : [1],
+                            backgroundColor: ['#10b981', '#6366f1', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4', '#64748b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: 'Inter', size: 11 } } }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
+
+            // Chart 2: Bar (Income vs Expense)
+            const totalFixos = state.gastosFixos.reduce((a, b) => a + b.valor, 0);
+            const totalVariaveis = state.gastosVariaveis.reduce((a, b) => a + b.valor, 0);
+
+            const ctx2 = document.getElementById('chartComparativo');
+            if (ctx2) {
+                if (chartComparativoInstance) chartComparativoInstance.destroy();
+                chartComparativoInstance = new Chart(ctx2, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Entradas', 'Gastos Fixos', 'Variáveis'],
+                        datasets: [{
+                            label: 'Valor (R$)',
+                            data: [state.rendaMensal, totalFixos, totalVariaveis],
+                            backgroundColor: ['#10b981', '#6366f1', '#f59e0b'],
+                            borderRadius: 12
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { display: false } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
+
+        /* MODAL ACTIONS & FORMS */
+        function openModalGasto(tipo) {
+            document.getElementById('formGasto').reset();
+            document.getElementById('gastoId').value = '';
+            document.getElementById('gastoTipo').value = tipo;
+
+            const modalTitulo = document.getElementById('modalGastoTitulo');
+            const dataField = document.getElementById('campoDataVariavel');
+
+            if (tipo === 'fixo') {
+                modalTitulo.innerText = 'Adicionar Gasto Fixo Mensal 📌';
+                dataField.classList.add('hidden');
+            } else {
+                modalTitulo.innerText = 'Registrar Gasto Variável / Diário 🛒';
+                dataField.classList.remove('hidden');
+                document.getElementById('gastoData').value = new Date().toISOString().split('T')[0];
+            }
+
+            document.getElementById('modalGasto').classList.remove('hidden');
+        }
+
+        function closeModalGasto() {
+            document.getElementById('modalGasto').classList.add('hidden');
+        }
+
+        function salvarGasto(e) {
+            e.preventDefault();
+            const id = document.getElementById('gastoId').value;
+            const tipo = document.getElementById('gastoTipo').value;
+            const descricao = document.getElementById('gastoDescricao').value;
+            const valor = parseFloat(document.getElementById('gastoValor').value) || 0;
+            const categoria = document.getElementById('gastoCategoria').value;
+
+            if (tipo === 'fixo') {
+                if (id) {
+                    const item = state.gastosFixos.find(g => g.id === id);
+                    if (item) { item.descricao = descricao; item.valor = valor; item.categoria = categoria; }
+                } else {
+                    state.gastosFixos.push({ id: 'f_' + Date.now(), descricao, valor, categoria, pago: false });
+                }
+            } else {
+                const data = document.getElementById('gastoData').value;
+                if (id) {
+                    const item = state.gastosVariaveis.find(g => g.id === id);
+                    if (item) { item.descricao = descricao; item.valor = valor; item.categoria = categoria; item.data = data; }
+                } else {
+                    state.gastosVariaveis.push({ id: 'v_' + Date.now(), descricao, valor, categoria, data });
+                }
+            }
+
+            closeModalGasto();
+            salvarState();
+            showToast("Item salvo com sucesso! ✨");
+        }
+
+        function editarGasto(tipo, id) {
+            const list = tipo === 'fixo' ? state.gastosFixos : state.gastosVariaveis;
+            const item = list.find(g => g.id === id);
+            if (!item) return;
+
+            openModalGasto(tipo);
+            document.getElementById('gastoId').value = item.id;
+            document.getElementById('gastoDescricao').value = item.descricao;
+            document.getElementById('gastoValor').value = item.valor;
+            document.getElementById('gastoCategoria').value = item.categoria;
+
+            if (tipo === 'variavel') {
+                document.getElementById('gastoData').value = item.data || new Date().toISOString().split('T')[0];
+            }
+        }
+
+        function removerGasto(tipo, id) {
+            // Conversao explícita para String para garantir comparacao perfeita de IDs
+            const targetId = String(id);
+            
+            if (tipo === 'fixo') {
+                state.gastosFixos = state.gastosFixos.filter(g => String(g.id) !== targetId);
+            } else {
+                state.gastosVariaveis = state.gastosVariaveis.filter(g => String(g.id) !== targetId);
+            }
+            
+            salvarState();
+            showToast("Item removido com sucesso! 🗑️");
+        }
+
+        function togglePagoFixo(id) {
+            const item = state.gastosFixos.find(g => String(g.id) === String(id));
+            if (item) {
+                item.pago = !item.pago;
+                salvarState();
+                showToast(item.pago ? "Conta marcada como paga! 🎉" : "Status alterado para pendente.");
+            }
+        }
+
+        /* RENDA MODAL */
+        function openRendaModal() {
+            document.getElementById('inputRendaValor').value = state.rendaMensal;
+            document.getElementById('modalRenda').classList.remove('hidden');
+        }
+
+        function closeRendaModal() {
+            document.getElementById('modalRenda').classList.add('hidden');
+        }
+
+        function salvarRenda(e) {
+            e.preventDefault();
+            const val = parseFloat(document.getElementById('inputRendaValor').value) || 0;
+            state.rendaMensal = val;
+            closeRendaModal();
+            salvarState();
+            showToast("Renda atualizada com sucesso! 💼");
+        }
+
+        /* UI THEME TOGGLE & TOAST */
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        /* EXPORT DATA FUNCTIONS (CSV / PDF) */
+        function exportarCSV() {
+            const totalFixos = state.gastosFixos.reduce((a, b) => a + b.valor, 0);
+            const totalVariaveis = state.gastosVariaveis.reduce((a, b) => a + b.valor, 0);
+            const saldoLivre = state.rendaMensal - (totalFixos + totalVariaveis);
+
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // UTF-8 BOM for Excel compatibility
+
+            // Header & Resumo
+            csvContent += "RELATORIO FINANCEIRO DE BOLSO\n";
+            csvContent += `Renda Mensal;${state.rendaMensal.toFixed(2)}\n`;
+            csvContent += `Total Gastos Fixos;${totalFixos.toFixed(2)}\n`;
+            csvContent += `Total Gastos Variaveis;${totalVariaveis.toFixed(2)}\n`;
+            csvContent += `Saldo Livre Final;${saldoLivre.toFixed(2)}\n\n`;
+
+            // Table 1: Gastos Fixos
+            csvContent += "GASTOS FIXOS\n";
+            csvContent += "Descricao;Categoria;Valor (BRL);Status\n";
+            state.gastosFixos.forEach(g => {
+                csvContent += `"${g.descricao}";"${g.categoria}";${g.valor.toFixed(2)};"${g.pago ? 'Pago' : 'Pendente'}"\n`;
+            });
+
+            csvContent += "\n";
+
+            // Table 2: Gastos Variaveis
+            csvContent += "GASTOS VARIAVEIS E DIARIOS\n";
+            csvContent += "Data;Descricao;Categoria;Valor (BRL)\n";
+            state.gastosVariaveis.forEach(g => {
+                const dataFmt = g.data ? g.data : 'Hoje';
+                csvContent += `"${dataFmt}";"${g.descricao}";"${g.categoria}";${g.valor.toFixed(2)}\n`;
+            });
+
+            // Trigger Download
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Relatorio_Financeiro_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("Relatório CSV baixado com sucesso! 📊");
+        }
+
+        function gerarRelatorioPDF() {
+            const totalFixos = state.gastosFixos.reduce((a, b) => a + b.valor, 0);
+            const totalVariaveis = state.gastosVariaveis.reduce((a, b) => a + b.valor, 0);
+            const saldoLivre = state.rendaMensal - (totalFixos + totalVariaveis);
+
+            const printWindow = window.open('', '_blank');
+            const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="pt-BR">
+                <head>
+                    <title>Relatório Financeiro — Gestão Financeira</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; color: #333; line-height: 1.5; }
+                        h1 { color: #059669; border-bottom: 2px solid #059669; padding-bottom: 5px; }
+                        h2 { color: #4f46e5; margin-top: 25px; }
+                        .cards { display: flex; gap: 15px; margin: 20px 0; }
+                        .card { flex: 1; padding: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; }
+                        .card-title { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+                        .card-value { font-size: 18px; font-weight: bold; margin-top: 4px; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+                        th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+                        th { background-color: #f1f5f9; }
+                        .footer { margin-top: 30px; font-size: 11px; text-align: center; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>💡 Relatório de Gestão Financeira</h1>
+                    <p style="font-size: 12px; color: #64748b;">Gerado em: ${dataHoje}</p>
+
+                    <div class="cards">
+                        <div class="card">
+                            <div class="card-title">Renda Total</div>
+                            <div class="card-value" style="color: #059669;">${formatMoney(state.rendaMensal)}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Gastos Fixos</div>
+                            <div class="card-value" style="color: #4f46e5;">${formatMoney(totalFixos)}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Gastos Variáveis</div>
+                            <div class="card-value" style="color: #d97706;">${formatMoney(totalVariaveis)}</div>
+                        </div>
+                        <div class="card">
+                            <div class="card-title">Saldo Livre</div>
+                            <div class="card-value" style="color: ${saldoLivre >= 0 ? '#059669' : '#e11d48'};">${formatMoney(saldoLivre)}</div>
+                        </div>
+                    </div>
+
+                    <h2>Gastos Fixos Mensais</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.gastosFixos.map(g => `
+                                <tr>
+                                    <td>${g.descricao}</td>
+                                    <td>${g.categoria}</td>
+                                    <td>${formatMoney(g.valor)}</td>
+                                    <td>${g.pago ? 'Pago' : 'Pendente'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <h2>Gastos Variáveis & Diários</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Descrição</th>
+                                <th>Categoria</th>
+                                <th>Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${state.gastosVariaveis.map(g => `
+                                <tr>
+                                    <td>${g.data ? new Date(g.data + 'T00:00:00').toLocaleDateString('pt-BR') : 'Hoje'}</td>
+                                    <td>${g.descricao}</td>
+                                    <td>${g.categoria}</td>
+                                    <td>${formatMoney(g.valor)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <div class="footer">
+                        Gestão Financeira — Relatório gerado para controle e planejamento financeiro pessoal.
+                    </div>
+
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            showToast("Gerando relatório para impressão / PDF... 🖨️");
+        }
+
+        function showToast(msg) {
+<!-- ... existing code -->
+```
